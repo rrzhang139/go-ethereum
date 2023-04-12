@@ -13,16 +13,16 @@ jobs:
         include:
           - goos: linux
             goarch: amd64
-            ext: ""
+            cc: gcc
           - goos: darwin
             goarch: amd64
-            ext: ""
+            cc: o64-clang
           - goos: linux
             goarch: arm64
-            ext: ""
+            cc: aarch64-linux-gnu-gcc
           - goos: darwin
             goarch: arm64
-            ext: ""
+            cc: oa64-clang
     runs-on: ubuntu-latest
     steps:
     - name: Check out code
@@ -30,6 +30,11 @@ jobs:
       with:
           submodules: recursive
           token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Install cross-compilers
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc gcc-aarch64-linux-gnu clang
     
     - name: Set up Go
       uses: actions/setup-go@v2
@@ -43,9 +48,10 @@ jobs:
       env:
         GOOS: ${{ matrix.goos }}
         GOARCH: ${{ matrix.goarch }}
+        CC: ${{ matrix.cc }}
       run: |
-        env GO111MODULE=on go run build/ci.go install -arch ${{ matrix.goarch }} ./cmd/geth
-        binary_name="l2geth-${GOOS}-${GOARCH}${{ matrix.ext }}"
+        env GO111MODULE=on go run build/ci.go install -arch="${GOARCH}" -cc="${CC}" ./cmd/geth
+        binary_name="l2geth-${GOOS}-${GOARCH}"
         mv build/bin/geth "build/bin/${binary_name}"
         tar -czvf "build/bin/${binary_name}.tar.gz" -C build/bin "${binary_name}"
         zip -j "build/bin/${binary_name}.zip" "build/bin/${binary_name}"
@@ -59,7 +65,7 @@ jobs:
         # with permissions to create releases in the other repo
         token: ${{ secrets.GITHUB_TOKEN }}
         files: |
-          build/bin/l2geth-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
-          build/bin/l2geth-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}.tar.gz
-          build/bin/l2geth-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}.zip
+          build/bin/l2geth-${{ matrix.goos }}-${{ matrix.goarch }}
+          build/bin/l2geth-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+          build/bin/l2geth-${{ matrix.goos }}-${{ matrix.goarch }}.zip
 
