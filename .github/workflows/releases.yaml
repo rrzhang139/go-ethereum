@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         goos: [linux] # installing macOS cross-compilers on a non-macOS system might be more involved. Holding off for now
-        goarch: [amd64]
+        goarch: [amd64, arm]
         include:
           - goos: linux
             goarch: amd64
@@ -20,9 +20,9 @@ jobs:
           # - goos: linux
           #   goarch: arm64
           #   cc: aarch64-linux-gnu-gcc
-          # - goos: linux
-          #   goarch: arm
-          #   cc: arm-linux-gnueabi-gcc
+          - goos: linux
+            goarch: arm
+            cc: arm-linux-gnueabi-gcc
           # - goos: darwin
           #   goarch: arm64
           #   cc: oa64-clang
@@ -53,7 +53,7 @@ jobs:
         GOARCH: ${{ matrix.goarch }}
         CC: ${{ matrix.cc }}
       run: |
-        env GO111MODULE=on go run build/ci.go install -arch $GOARCH -cc $CC ./cmd/geth
+         env GO111MODULE=on GOOS=${GOOS} GOARCH=${GOARCH} CC=${CC} go build -o "build/bin/geth-${GOOS}-${GOARCH}" ./cmd/geth
         binary_name="l2geth-${GOOS}-${GOARCH}"
         mv build/bin/geth "build/bin/${binary_name}"
         tar -czvf "build/bin/${binary_name}.tar.gz" -C build/bin "${binary_name}"
