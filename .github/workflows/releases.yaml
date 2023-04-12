@@ -5,24 +5,27 @@ on:
     types: [created]
 
 jobs:
-  release:
+  release-linux:
     strategy:
       matrix:
-        goos: [linux, darwin]
-        goarch: [amd64, arm64]
+        goos: [linux] # installing macOS cross-compilers on a non-macOS system might be more involved. Holding off for now
+        goarch: [amd64, arm, arm64]
         include:
           - goos: linux
             goarch: amd64
             cc: gcc
-          - goos: darwin
-            goarch: amd64
-            cc: o64-clang
+          # - goos: darwin
+          #   goarch: amd64
+          #   cc: o64-clang
           - goos: linux
             goarch: arm64
             cc: aarch64-linux-gnu-gcc
-          - goos: darwin
-            goarch: arm64
-            cc: oa64-clang
+          - goos: linux
+            goarch: arm
+            cc: arm-linux-gnueabi-gcc
+          # - goos: darwin
+          #   goarch: arm64
+          #   cc: oa64-clang
     runs-on: ubuntu-latest
     steps:
     - name: Check out code
@@ -33,8 +36,8 @@ jobs:
     
     - name: Install cross-compilers
       run: |
-        sudo apt-get update
-        sudo apt-get install -y gcc gcc-aarch64-linux-gnu clang
+        sudo apt-get update 
+        sudo apt-get install -y gcc gcc-arm-linux-gnueabi libc6-dev-armel-cross gcc-arm-linux-gnueabihf libc6-dev-armhf-cross gcc-aarch64-linux-gnu libc6-dev-arm64-cross
     
     - name: Set up Go
       uses: actions/setup-go@v2
@@ -50,7 +53,7 @@ jobs:
         GOARCH: ${{ matrix.goarch }}
         CC: ${{ matrix.cc }}
       run: |
-        env GO111MODULE=on go run build/ci.go install -arch="${GOARCH}" -cc="${CC}" ./cmd/geth
+        env GO111MODULE=on go run build/ci.go install -arch $GOARCH -cc $CC ./cmd/geth
         binary_name="l2geth-${GOOS}-${GOARCH}"
         mv build/bin/geth "build/bin/${binary_name}"
         tar -czvf "build/bin/${binary_name}.tar.gz" -C build/bin "${binary_name}"
