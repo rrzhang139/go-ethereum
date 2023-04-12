@@ -53,7 +53,7 @@ jobs:
         GOARCH: ${{ matrix.goarch }}
         CC: ${{ matrix.cc }}
       run: |
-         env GO111MODULE=on GOOS=${GOOS} GOARCH=${GOARCH} CC=${CC} go build -o "build/bin/geth-${GOOS}-${GOARCH}" ./cmd/geth
+        env GO111MODULE=on GOOS=${GOOS} GOARCH=${GOARCH} CC=${CC} go build -o "build/bin/geth-${GOOS}-${GOARCH}" ./cmd/geth
         binary_name="l2geth-${GOOS}-${GOARCH}"
         mv build/bin/geth "build/bin/${binary_name}"
         tar -czvf "build/bin/${binary_name}.tar.gz" -C build/bin "${binary_name}"
