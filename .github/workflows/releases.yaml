@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         goos: [linux] # installing macOS cross-compilers on a non-macOS system might be more involved. Holding off for now
-        goarch: [amd64, arm, arm64]
+        goarch: [amd64, arm]
         include:
           - goos: linux
             goarch: amd64
@@ -17,9 +17,9 @@ jobs:
           # - goos: darwin
           #   goarch: amd64
           #   cc: o64-clang
-          - goos: linux
-            goarch: arm64
-            cc: aarch64-linux-gnu-gcc
+          # - goos: linux
+          #   goarch: arm64
+          #   cc: aarch64-linux-gnu-gcc
           - goos: linux
             goarch: arm
             cc: arm-linux-gnueabi-gcc
