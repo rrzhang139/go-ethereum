@@ -5,58 +5,34 @@ on:
     types: [created]
 
 jobs:
-  release-linux:
-    strategy:
-      matrix:
-        goos: [linux] # installing macOS cross-compilers on a non-macOS system might be more involved. Holding off for now
-        goarch: [amd64, arm]
-        include:
-          - goos: linux
-            goarch: amd64
-            cc: gcc
-          # - goos: darwin
-          #   goarch: amd64
-          #   cc: o64-clang
-          # - goos: linux
-          #   goarch: arm64
-          #   cc: aarch64-linux-gnu-gcc
-          - goos: linux
-            goarch: arm
-            cc: arm-linux-gnueabi-gcc
-          # - goos: darwin
-          #   goarch: arm64
-          #   cc: oa64-clang
+  release-linux-amd64:
     runs-on: ubuntu-latest
+    env:
+      goos: linux
+      goarch: amd64
     steps:
     - name: Check out code
       uses: actions/checkout@v2
       with:
           submodules: recursive
           token: ${{ secrets.GITHUB_TOKEN }}
-    
-    - name: Install cross-compilers
-      run: |
-        sudo apt-get update 
-        sudo apt-get install -y gcc gcc-arm-linux-gnueabi libc6-dev-armel-cross gcc-arm-linux-gnueabihf libc6-dev-armhf-cross gcc-aarch64-linux-gnu libc6-dev-arm64-cross
-    
+
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
         go-version: "1.18.x"
-    
+
     - name: Install zip
       run: sudo apt-get install zip
 
     - name: Build geth binary and create archives
       env:
-        GOOS: ${{ matrix.goos }}
-        GOARCH: ${{ matrix.goarch }}
-        CC: ${{ matrix.cc }}
+        GOOS: ${{ env.goos }}
+        GOARCH: ${{ env.goarch }}
       run: |
-        env GO111MODULE=on GOOS=${GOOS} GOARCH=${GOARCH} CC=${CC} go build -o "build/bin/geth-${GOOS}-${GOARCH}" ./cmd/geth
+        env GO111MODULE=on go run build/ci.go install ./cmd/geth -arch $GOARCH
         binary_name="l2geth-${GOOS}-${GOARCH}"
         mv build/bin/geth "build/bin/${binary_name}"
-        tar -czvf "build/bin/${binary_name}.tar.gz" -C build/bin "${binary_name}"
         zip -j "build/bin/${binary_name}.zip" "build/bin/${binary_name}"
 
     - name: Create and upload release assets
@@ -68,7 +44,47 @@ jobs:
         # with permissions to create releases in the other repo
         token: ${{ secrets.GITHUB_TOKEN }}
         files: |
-          build/bin/l2geth-${{ matrix.goos }}-${{ matrix.goarch }}
-          build/bin/l2geth-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
-          build/bin/l2geth-${{ matrix.goos }}-${{ matrix.goarch }}.zip
+          build/bin/l2geth-${{ env.goos }}-${{ env.goarch }}
+          build/bin/l2geth-${{ env.goos }}-${{ env.goarch }}.zip
 
+  release-linux-arm:
+    runs-on: buildjet-4vcpu-ubuntu-2204-arm
+    env:
+      goos: linux
+      goarch: arm 
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+      with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: "1.18.x"
+
+    - name: Install zip
+      run: sudo apt-get install zip
+
+    - name: Build geth binary and create archives
+      env:
+        GOOS: ${{ env.goos }}
+        GOARCH: ${{ env.goarch }}
+      run: |
+        env GO111MODULE=on go run build/ci.go install ./cmd/geth -arch $GOARCH
+        binary_name="l2geth-${GOOS}-${GOARCH}"
+        mv build/bin/geth "build/bin/${binary_name}"
+        zip -j "build/bin/${binary_name}.zip" "build/bin/${binary_name}"
+
+    - name: Create and upload release assets
+      uses: softprops/action-gh-release@v1
+      with:
+        draft: false
+        prerelease: false
+        # note you'll typically need to create a personal access token
+        # with permissions to create releases in the other repo
+        token: ${{ secrets.GITHUB_TOKEN }}
+        files: |
+          build/bin/l2geth-${{ env.goos }}-${{ env.goarch }}
+          build/bin/l2geth-${{ env.goos }}-${{ env.goarch }}.zip
